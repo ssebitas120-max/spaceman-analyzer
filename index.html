@@ -17,11 +17,7 @@ body {
   font-family: Arial, sans-serif;
 }
 
-main {
-  max-width: 750px;
-  margin: auto;
-}
-
+main { max-width: 750px; margin: auto; }
 h1 { color: #d8a6ff; }
 
 .card {
@@ -55,8 +51,8 @@ button {
 }
 
 button:hover { background: #a45aff; }
-
 .borrar { background: #a83250; }
+
 .grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -88,16 +84,31 @@ button:hover { background: #a45aff; }
   border-radius: 20px;
 }
 
-small { color: #d0b9e7; }
-
-#mensaje {
-  display: block;
-  margin-top: 10px;
+.barra {
+  display: flex;
+  width: 100%;
+  height: 16px;
+  background: #493164;
+  border-radius: 20px;
+  overflow: hidden;
+  margin: 12px 0;
 }
+
+.barra-si { background: #16a34a; }
+.barra-no { background: #a855f7; }
+
+.probabilidad {
+  font-size: 38px;
+  font-weight: bold;
+  color: #4ade80;
+  margin: 12px 0;
+}
+
+small { color: #d0b9e7; }
+#mensaje { display: block; margin-top: 10px; }
 
 @media(max-width: 450px) {
   body { padding: 10px; }
-  .grid { grid-template-columns: 1fr 1fr; }
 }
 </style>
 </head>
@@ -125,7 +136,7 @@ placeholder="Pega resultados separados por espacios, comas o saltos de línea"><
 </section>
 
 <section class="card">
-<h3>2. Estadísticas</h3>
+<h3>2. Estadísticas generales</h3>
 
 <div class="grid">
 <div class="metric">Rondas<strong id="rondas">0</strong></div>
@@ -136,17 +147,298 @@ placeholder="Pega resultados separados por espacios, comas o saltos de línea"><
 <div class="metric">Menores de 1.50x<strong id="bajos">—</strong></div>
 <div class="metric">Resultados de 2x o más<strong id="altos">—</strong></div>
 </div>
-
-<h3>Frecuencia histórica</h3>
-<div id="frecuencias"></div>
-
-<p><small>Estos datos describen resultados anteriores. No predicen la siguiente ronda.</small></p>
 </section>
 
 <section class="card">
-<h3>3. Historial</h3>
+<h3>3. Frecuencia de 2x o más</h3>
+<p>Analizamos exclusivamente las últimas 50 rondas registradas.</p>
+
+<div class="probabilidad" id="frecuencia50">—</div>
+
+<div class="barra">
+  <div class="barra-si" id="barraSi"></div>
+  <div class="barra-no" id="barraNo"></div>
+</div>
+
+<div class="grid">
+  <div class="metric">
+    Resultados de 2x o más
+    <strong id="cantidadSi">0</strong>
+  </div>
+  <div class="metric">
+    Resultados menores de 2x
+    <strong id="cantidadNo">0</strong>
+  </div>
+  <div class="metric">
+    Rondas analizadas
+    <strong id="total50">0</strong>
+  </div>
+  <div class="metric">
+    Datos pendientes
+    <strong id="faltantes">50</strong>
+  </div>
+</div>
+
+<p id="estado50"></p>
+<small>
+Este porcentaje representa la frecuencia observada en las últimas
+50 rondas, no la probabilidad garantizada de la siguiente.
+</small>
+</section>
+
+<section class="card">
+<h3>4. Frecuencias generales</h3>
+<div id="frecuencias"></div>
+</section>
+
+<section class="card">
+<h3>5. Historial</h3>
 <p>Últimos resultados registrados:</p>
 <div id="historial" class="resultados"></div>
+
+<button id="exportar" type="button">Exportar CSV</button>
+<button id="borrar" class="borrar" type="button">Borrar historial</button>
+</section>
+
+</main>
+
+<script>
+(function () {
+"use strict";
+
+const buscar = id => document.getElementById(id);
+const CLAVE = "spacemanAnalyzerV2";
+
+let datos = [];
+
+function mensaje(texto) {
+  buscar("mensaje").textContent = texto;
+}
+
+function cargar() {
+  try {
+    const guardados = JSON.parse(
+      localStorage.getItem(CLAVE) || "[]"
+    );
+
+    if (Array.isArray(guardados)) {
+      datos = guardados.filter(n =>
+        typeof n === "number" &&
+        Number.isFinite(n) &&
+        n >= 1 && n <= 5000
+      );
+    }
+  } catch {
+    datos = [];
+    mensaje("No se pudo leer el historial.");
+  }
+}
+
+function guardar() {
+  try {
+    localStorage.setItem(CLAVE, JSON.stringify(datos));
+    return true;
+  } catch {
+    mensaje("No se pudo guardar el historial.");
+    return false;
+  }
+}
+
+function porcentaje(cantidad, total) {
+  return total
+    ? (cantidad * 100 / total).toFixed(1) + "%"
+    : "—";
+}
+
+function agregarVarios(valores) {
+  const validos = valores
+    .map(v => Number(String(v).replace(",", ".")))
+    .filter(n =>
+      Number.isFinite(n) && n >= 1 && n <= 5000
+    );
+
+  if (!validos.length) {
+    mensaje("Escribe multiplicadores válidos desde 1 hasta 5000.");
+    return;
+  }
+
+  datos.push(...validos);
+  guardar();
+  actualizar();
+
+  mensaje("Se guardaron " + validos.length + " resultados.");
+}
+
+function actualizarFrecuencia50() {
+  const ultimas50 = datos.slice(-50);
+  const total = ultimas50.length;
+
+  const superiores = ultimas50.filter(n => n >= 2).length;
+  const inferiores = total - superiores;
+
+  const frecuencia = total
+    ? superiores * 100 / total
+    : 0;
+
+  buscar("frecuencia50").textContent =
+    total ? frecuencia.toFixed(1) + "%" : "Sin datos";
+
+  buscar("cantidadSi").textContent = superiores;
+  buscar("cantidadNo").textContent = inferiores;
+  buscar("total50").textContent = total;
+  buscar("faltantes").textContent = 50 - total;
+
+  buscar("barraSi").style.width =
+    total ? frecuencia + "%" : "0%";
+
+  buscar("barraNo").style.width =
+    total ? (100 - frecuencia) + "%" : "0%";
+
+  if (total < 50) {
+    buscar("estado50").textContent =
+      "Faltan " + (50 - total) +
+      " rondas para completar el análisis de 50.";
+  } else {
+    buscar("estado50").textContent =
+      "Análisis completo: se utilizaron las últimas 50 rondas.";
+  }
+}
+
+function actualizar() {
+  const total = datos.length;
+  const ordenados = [...datos].sort((a, b) => a - b);
+  const suma = datos.reduce((a, b) => a + b, 0);
+
+  const mediana = total
+    ? (
+      ordenados[Math.floor((total - 1) / 2)] +
+      ordenados[Math.ceil((total - 1) / 2)]
+    ) / 2
+    : 0;
+
+  buscar("rondas").textContent = total;
+
+  buscar("promedio").textContent =
+    total ? (suma / total).toFixed(2) + "x" : "—";
+
+  buscar("mediana").textContent =
+    total ? mediana.toFixed(2) + "x" : "—";
+
+  buscar("mayor").textContent =
+    total ? Math.max(...datos).toFixed(2) + "x" : "—";
+
+  buscar("menor").textContent =
+    total ? Math.min(...datos).toFixed(2) + "x" : "—";
+
+  buscar("bajos").textContent =
+    total ? porcentaje(datos.filter(n => n < 1.5).length, total) : "—";
+
+  buscar("altos").textContent =
+    total ? porcentaje(datos.filter(n => n >= 2).length, total) : "—";
+
+  const frecuencias = buscar("frecuencias");
+  frecuencias.replaceChildren();
+
+  [1.5, 2, 3, 5, 10].forEach(objetivo => {
+    const cantidad = datos.filter(n => n >= objetivo).length;
+    const p = document.createElement("p");
+
+    p.textContent =
+      objetivo + "x o más: " +
+      porcentaje(cantidad, total) +
+      " (" + cantidad + "/" + total + ")";
+
+    frecuencias.appendChild(p);
+  });
+
+  const historial = buscar("historial");
+  historial.replaceChildren();
+
+  datos.slice().reverse().slice(0, 100).forEach(n => {
+    const elemento = document.createElement("span");
+    elemento.className = "pill";
+    elemento.textContent = n.toFixed(2) + "x";
+    historial.appendChild(elemento);
+  });
+
+  actualizarFrecuencia50();
+}
+
+function registrarEventos() {
+  buscar("agregar").addEventListener("click", function () {
+    const entrada = buscar("valor").value;
+
+    if (entrada.trim() === "") {
+      mensaje("Primero escribe un multiplicador.");
+      return;
+    }
+
+    agregarVarios([entrada]);
+    buscar("valor").value = "";
+    buscar("valor").focus();
+  });
+
+  buscar("valor").addEventListener("keydown", function (evento) {
+    if (evento.key === "Enter") {
+      buscar("agregar").click();
+    }
+  });
+
+  buscar("importar").addEventListener("click", function () {
+    const texto = buscar("lista").value.trim();
+
+    if (!texto) {
+      mensaje("Primero pega una lista de resultados.");
+      return;
+    }
+
+    agregarVarios(texto.split(/[\s,;]+/).filter(Boolean));
+    buscar("lista").value = "";
+  });
+
+  buscar("exportar").addEventListener("click", function () {
+    if (!datos.length) {
+      mensaje("No hay resultados para exportar.");
+      return;
+    }
+
+    const contenido = "multiplicador\n" +
+      datos.map(n => n.toFixed(2)).join("\n");
+
+    const archivo = new Blob(["\uFEFF" + contenido], {
+      type: "text/csv;charset=utf-8"
+    });
+
+    const url = URL.createObjectURL(archivo);
+    const enlace = document.createElement("a");
+
+    enlace.href = url;
+    enlace.download = "spaceman-resultados.csv";
+    enlace.click();
+
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    mensaje("Archivo CSV descargado.");
+  });
+
+  buscar("borrar").addEventListener("click", function () {
+    if (confirm("¿Deseas borrar todos los resultados?")) {
+      datos = [];
+      guardar();
+      actualizar();
+      mensaje("Historial eliminado.");
+    }
+  });
+}
+
+cargar();
+registrarEventos();
+actualizar();
+
+})();
+</script>
+
+</body>
+</html>
 
 <button id="exportar" type="button">Exportar CSV</button>
 <button id="borrar" class="borrar" type="button">Borrar historial</button>
