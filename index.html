@@ -1,0 +1,252 @@
+```html
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spaceman Analyzer</title>
+<style>
+body {
+  margin: 0;
+  padding: 20px;
+  background: #100820;
+  color: white;
+  font-family: Arial, sans-serif;
+}
+main { max-width: 700px; margin: auto; }
+h1 { color: #d8a6ff; }
+.card {
+  background: #211239;
+  border: 1px solid #493164;
+  border-radius: 14px;
+  padding: 16px;
+  margin: 15px 0;
+}
+input, textarea, button {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 12px;
+  margin: 6px 0;
+  border-radius: 8px;
+  font-size: 16px;
+}
+input, textarea {
+  background: #100820;
+  color: white;
+  border: 1px solid #62467e;
+}
+button {
+  background: #853ce8;
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+}
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.metric {
+  background: #160c27;
+  padding: 12px;
+  border-radius: 8px;
+}
+.metric strong {
+  display: block;
+  font-size: 23px;
+  margin-top: 8px;
+}
+.results {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.pill {
+  background: #3b2162;
+  padding: 8px 12px;
+  border-radius: 20px;
+}
+small { color: #d0b9e7; }
+</style>
+</head>
+<body>
+<main>
+<h1>🚀 Spaceman Analyzer</h1>
+<p>Analizador estadístico de resultados históricos.</p>
+
+<section class="card">
+<h3>1. Registrar multiplicadores</h3>
+<input id="valor" type="number" min="1" step="any"
+placeholder="Ejemplo: 2.35">
+<button id="agregar">Guardar resultado</button>
+
+<textarea id="lista" rows="4"
+placeholder="Pega varios resultados: 1.20, 2.35, 3.50"></textarea>
+<button id="importar">Importar lista</button>
+<small id="mensaje">Los datos se guardan en este navegador.</small>
+</section>
+
+<section class="card">
+<h3>2. Estadísticas</h3>
+<div class="grid">
+<div class="metric">Rondas<strong id="rondas">0</strong></div>
+<div class="metric">Promedio<strong id="promedio">—</strong></div>
+<div class="metric">Mediana<strong id="mediana">—</strong></div>
+<div class="metric">Mayor resultado<strong id="mayor">—</strong></div>
+<div class="metric">Menores de 1.50x<strong id="bajos">—</strong></div>
+<div class="metric">Resultados de 2x o más<strong id="altos">—</strong></div>
+</div>
+
+<h3>Frecuencia histórica</h3>
+<div id="frecuencias"></div>
+<p><small>Las estadísticas históricas no predicen con certeza la siguiente ronda.</small></p>
+</section>
+
+<section class="card">
+<h3>3. Historial</h3>
+<div id="historial" class="results"></div>
+<button id="exportar">Exportar CSV</button>
+<button id="borrar">Borrar historial</button>
+</section>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const CLAVE = "spacemanAnalyzerV1";
+let datos = [];
+
+try {
+  const guardados = JSON.parse(localStorage.getItem(CLAVE) || "[]");
+  if (Array.isArray(guardados)) {
+    datos = guardados.filter(n =>
+      Number.isFinite(n) && n >= 1 && n <= 5000
+    );
+  }
+} catch {}
+
+function guardar() {
+  try {
+    localStorage.setItem(CLAVE, JSON.stringify(datos));
+    $("mensaje").textContent = "Historial guardado correctamente.";
+  } catch {
+    $("mensaje").textContent = "No se pudo guardar el historial.";
+  }
+  actualizar();
+}
+
+function agregarVarios(valores) {
+  const validos = valores.map(Number).filter(n =>
+    Number.isFinite(n) && n >= 1 && n <= 5000
+  );
+
+  if (!validos.length) {
+    $("mensaje").textContent =
+      "Introduce multiplicadores válidos desde 1.";
+    return;
+  }
+
+  datos.push(...validos);
+  guardar();
+  $("mensaje").textContent =
+    "Se guardaron " + validos.length + " resultados.";
+}
+
+$("agregar").onclick = () => {
+  const valor = Number($("valor").value);
+
+  if (!Number.isFinite(valor) || valor < 1 || valor > 5000) {
+    $("mensaje").textContent = "Escribe un multiplicador válido.";
+    return;
+  }
+
+  agregarVarios([valor]);
+  $("valor").value = "";
+};
+
+$("importar").onclick = () => {
+  const texto = $("lista").value.trim();
+
+  if (!texto) {
+    $("mensaje").textContent = "Primero pega una lista de resultados.";
+    return;
+  }
+
+  agregarVarios(texto.split(/[\s,;]+/).filter(Boolean));
+  $("lista").value = "";
+};
+
+function porcentaje(cantidad, total) {
+  return total ? (cantidad * 100 / total).toFixed(1) + "%" : "—";
+}
+
+function actualizar() {
+  const total = datos.length;
+  const ordenados = [...datos].sort((a, b) => a - b);
+  const suma = datos.reduce((a, b) => a + b, 0);
+
+  const mediana = total
+    ? (ordenados[Math.floor((total - 1) / 2)] +
+       ordenados[Math.ceil((total - 1) / 2)]) / 2
+    : 0;
+
+  $("rondas").textContent = total;
+  $("promedio").textContent =
+    total ? (suma / total).toFixed(2) + "x" : "—";
+  $("mediana").textContent =
+    total ? mediana.toFixed(2) + "x" : "—";
+  $("mayor").textContent =
+    total ? Math.max(...datos).toFixed(2) + "x" : "—";
+  $("bajos").textContent =
+    total ? porcentaje(datos.filter(n => n < 1.5).length, total) : "—";
+  $("altos").textContent =
+    total ? porcentaje(datos.filter(n => n >= 2).length, total) : "—";
+
+  $("frecuencias").replaceChildren();
+
+  [1.5, 2, 3, 5, 10].forEach(objetivo => {
+    const cantidad = datos.filter(n => n >= objetivo).length;
+    const p = document.createElement("p");
+    p.textContent = objetivo + "x o más: " +
+      porcentaje(cantidad, total) + " (" + cantidad + "/" + total + ")";
+    $("frecuencias").appendChild(p);
+  });
+
+  $("historial").replaceChildren();
+
+  datos.slice().reverse().slice(0, 100).forEach(n => {
+    const span = document.createElement("span");
+    span.className = "pill";
+    span.textContent = n.toFixed(2) + "x";
+    $("historial").appendChild(span);
+  });
+}
+
+$("exportar").onclick = () => {
+  const contenido = "multiplicador\n" +
+    datos.map(n => n.toFixed(2)).join("\n");
+
+  const archivo = new Blob(["\uFEFF" + contenido], {
+    type: "text/csv;charset=utf-8"
+  });
+
+  const url = URL.createObjectURL(archivo);
+  const enlace = document.createElement("a");
+  enlace.href = url;
+  enlace.download = "spaceman-resultados.csv";
+  enlace.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+};
+
+$("borrar").onclick = () => {
+  if (confirm("¿Deseas borrar todos los resultados?")) {
+    datos = [];
+    guardar();
+  }
+};
+
+actualizar();
+</script>
+</body>
+</html>
+```
