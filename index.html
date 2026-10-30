@@ -3,649 +3,387 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Spaceman Analyzer</title>
-
 <style>
-* { box-sizing: border-box; }
-
-body {
-  margin: 0;
-  padding: 20px;
-  background: #100820;
-  color: white;
-  font-family: Arial, sans-serif;
+*{box-sizing:border-box}
+body{
+  margin:0;padding:20px;
+  background:#101522;color:#f1f5f9;
+  font-family:Arial,sans-serif
 }
-
-main { max-width: 750px; margin: auto; }
-h1 { color: #d8a6ff; }
-
-.card {
-  background: #211239;
-  border: 1px solid #493164;
-  border-radius: 14px;
-  padding: 16px;
-  margin: 15px 0;
+.container{max-width:950px;margin:auto}
+h1{text-align:center;color:#55d6ff}
+h2{color:#55d6ff;font-size:20px}
+.card{
+  background:#1b2638;padding:18px;
+  border-radius:12px;margin:16px 0;
+  border:1px solid #334155
 }
-
-input, textarea, button {
-  width: 100%;
-  padding: 13px;
-  margin: 7px 0;
-  border-radius: 8px;
-  font-size: 16px;
+input,button{
+  padding:12px;border-radius:8px;
+  border:0;font-size:15px;margin:5px 0
 }
-
-input, textarea {
-  background: #100820;
-  color: white;
-  border: 1px solid #62467e;
+input{width:100%;background:#e2e8f0;color:#111827}
+button{cursor:pointer;font-weight:bold}
+.primary{background:#16a6d5;color:white}
+.secondary{background:#475569;color:white}
+.danger{background:#dc3545;color:white}
+.grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+  gap:10px
 }
-
-button {
-  background: #853ce8;
-  color: white;
-  border: none;
-  cursor: pointer;
-  font-weight: bold;
+.stat{
+  background:#101b2b;padding:14px;
+  border-radius:9px;text-align:center
 }
-
-button:hover { background: #a45aff; }
-.borrar { background: #a83250; }
-
-.grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
+.stat strong{display:block;font-size:23px;color:#55d6ff;margin-top:6px}
+.resultado{
+  display:inline-block;background:#26364d;
+  padding:8px 12px;margin:4px;border-radius:7px
 }
-
-.metric {
-  background: #160c27;
-  padding: 13px;
-  border-radius: 8px;
+.good{color:#4ade80}
+.warn{color:#fbbf24}
+.bad{color:#fb7185}
+.bar{
+  height:14px;background:#334155;border-radius:10px;
+  overflow:hidden;margin:10px 0
 }
-
-.metric strong {
-  display: block;
-  font-size: 23px;
-  margin-top: 8px;
-  color: #d8a6ff;
-}
-
-.resultados {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
-}
-
-.pill {
-  background: #3b2162;
-  padding: 8px 12px;
-  border-radius: 20px;
-}
-
-.barra {
-  display: flex;
-  width: 100%;
-  height: 16px;
-  background: #493164;
-  border-radius: 20px;
-  overflow: hidden;
-  margin: 12px 0;
-}
-
-.barra-si { background: #16a34a; }
-.barra-no { background: #a855f7; }
-
-.probabilidad {
-  font-size: 38px;
-  font-weight: bold;
-  color: #4ade80;
-  margin: 12px 0;
-}
-
-small { color: #d0b9e7; }
-#mensaje { display: block; margin-top: 10px; }
-
-@media(max-width: 450px) {
-  body { padding: 10px; }
-}
+.fill{height:100%;background:#22c55e;width:0%}
+.small{font-size:13px;color:#cbd5e1}
+#consejo{font-size:17px;line-height:1.5}
 </style>
 </head>
-
 <body>
-<main>
+<div class="container">
 
-<h1>🚀 Spaceman Analyzer</h1>
-<p>Analizador estadístico de resultados históricos.</p>
+<h1>🚀 SPACEMAN ANALYZER</h1>
+<p style="text-align:center">Analizador estadístico de resultados históricos</p>
 
-<section class="card">
-<h3>1. Registrar multiplicadores</h3>
+<div class="card">
+<h2>Registrar resultado</h2>
+<input type="number" id="multiplicador" placeholder="Ejemplo: 2.50" step="0.01" min="1">
+<button class="primary" onclick="agregarResultado()">Guardar resultado</button>
 
-<input id="valor" type="number" min="1" max="5000"
-step="any" placeholder="Ejemplo: 2.35">
+<h2>Importar varios resultados</h2>
+<p class="small">Escribe los multiplicadores separados por comas, espacios o saltos de línea.</p>
+<textarea id="varios" style="width:100%;height:90px;padding:12px;border-radius:8px" placeholder="1.20, 2.50, 1.05, 8.40"></textarea>
+<button class="primary" onclick="agregarVarios()">Importar resultados</button>
+</div>
 
-<button id="agregar" type="button">Guardar resultado</button>
+<div class="card">
+<h2>Estadísticas generales</h2>
+<div class="grid">
+<div class="stat">Resultados<strong id="total">0</strong></div>
+<div class="stat">Promedio<strong id="promedio">0x</strong></div>
+<div class="stat">Mediana<strong id="mediana">0x</strong></div>
+<div class="stat">Más bajo<strong id="minimo">0x</strong></div>
+<div class="stat">Más alto<strong id="maximo">0x</strong></div>
+</div>
+</div>
 
-<textarea id="lista" rows="4"
-placeholder="Pega resultados separados por espacios, comas o saltos de línea"></textarea>
+<div class="card">
+<h2>Frecuencia de 2x o más</h2>
+<div class="grid">
+<div class="stat">Resultados analizados<strong id="total50">0</strong></div>
+<div class="stat">2x o más<strong id="mayores2">0</strong></div>
+<div class="stat">Menores de 2x<strong id="menores2">0</strong></div>
+</div>
+<p id="porcentaje2">Porcentaje: 0%</p>
+<div class="bar"><div class="fill" id="barra2"></div></div>
+<p class="small" id="detalle50"></p>
+</div>
 
-<button id="importar" type="button">Importar lista</button>
-
-<small id="mensaje">Listo para registrar resultados.</small>
-</section>
-
-<section class="card">
-<h3>2. Estadísticas generales</h3>
+<div class="card">
+<h2>📊 Consejero de tendencia</h2>
+<p class="small">Análisis de los últimos 20 resultados, dando mayor importancia a los últimos 5.</p>
 
 <div class="grid">
-<div class="metric">Rondas<strong id="rondas">0</strong></div>
-<div class="metric">Promedio<strong id="promedio">—</strong></div>
-<div class="metric">Mediana<strong id="mediana">—</strong></div>
-<div class="metric">Mayor resultado<strong id="mayor">—</strong></div>
-<div class="metric">Menor resultado<strong id="menor">—</strong></div>
-<div class="metric">Menores de 1.50x<strong id="bajos">—</strong></div>
-<div class="metric">Resultados de 2x o más<strong id="altos">—</strong></div>
-</div>
-</section>
-
-<section class="card">
-<h3>3. Frecuencia de 2x o más</h3>
-<p>Analizamos exclusivamente las últimas 50 rondas registradas.</p>
-
-<div class="probabilidad" id="frecuencia50">—</div>
-
-<div class="barra">
-  <div class="barra-si" id="barraSi"></div>
-  <div class="barra-no" id="barraNo"></div>
+<div class="stat">Tendencia<strong id="tendencia">--</strong></div>
+<div class="stat">Promedio últimos 5<strong id="prom5">0x</strong></div>
+<div class="stat">Promedio anteriores 15<strong id="prom15">0x</strong></div>
+<div class="stat">Resultados de 2x o más<strong id="frecuencia20">0%</strong></div>
 </div>
 
-<div class="grid">
-  <div class="metric">
-    Resultados de 2x o más
-    <strong id="cantidadSi">0</strong>
-  </div>
-  <div class="metric">
-    Resultados menores de 2x
-    <strong id="cantidadNo">0</strong>
-  </div>
-  <div class="metric">
-    Rondas analizadas
-    <strong id="total50">0</strong>
-  </div>
-  <div class="metric">
-    Datos pendientes
-    <strong id="faltantes">50</strong>
-  </div>
+<h2>Comportamiento reciente</h2>
+<p id="comportamiento">Agrega resultados para comenzar el análisis.</p>
+
+<h2>Racha actual</h2>
+<p id="racha">Sin datos.</p>
+
+<h2>Consejo del analizador</h2>
+<p id="consejo">Esperando resultados suficientes para analizar.</p>
+<p class="small" id="confianza"></p>
 </div>
 
-<p id="estado50"></p>
-<small>
-Este porcentaje representa la frecuencia observada en las últimas
-50 rondas, no la probabilidad garantizada de la siguiente.
-</small>
-</section>
+<div class="card">
+<h2>Historial de resultados</h2>
+<div id="historial">Todavía no hay resultados.</div>
+</div>
 
-<section class="card">
-<h3>4. Frecuencias generales</h3>
-<div id="frecuencias"></div>
-</section>
+<div class="card">
+<h2>Herramientas</h2>
+<button class="primary" onclick="exportarCSV()">Descargar historial CSV</button>
+<button class="danger" onclick="borrarHistorial()">Borrar todo el historial</button>
+</div>
 
-<section class="card">
-<h3>5. Historial</h3>
-<p>Últimos resultados registrados:</p>
-<div id="historial" class="resultados"></div>
-
-<button id="exportar" type="button">Exportar CSV</button>
-<button id="borrar" class="borrar" type="button">Borrar historial</button>
-</section>
-
-</main>
+<p class="small" style="text-align:center">
+Este sistema analiza resultados anteriores. No puede conocer ni garantizar el resultado de una ronda futura.
+</p>
+</div>
 
 <script>
-(function () {
-"use strict";
+(function(){
 
-const buscar = id => document.getElementById(id);
 const CLAVE = "spacemanAnalyzerV2";
-
 let datos = [];
 
-function mensaje(texto) {
-  buscar("mensaje").textContent = texto;
-}
-
-function cargar() {
-  try {
-    const guardados = JSON.parse(
-      localStorage.getItem(CLAVE) || "[]"
-    );
-
-    if (Array.isArray(guardados)) {
-      datos = guardados.filter(n =>
-        typeof n === "number" &&
-        Number.isFinite(n) &&
-        n >= 1 && n <= 5000
-      );
-    }
-  } catch {
-    datos = [];
-    mensaje("No se pudo leer el historial.");
+try {
+  const guardado = JSON.parse(localStorage.getItem(CLAVE));
+  if(Array.isArray(guardado)){
+    datos = guardado.filter(x => Number.isFinite(Number(x)) && Number(x) >= 1).map(Number);
   }
+} catch(e) {
+  datos = [];
 }
 
-function guardar() {
-  try {
-    localStorage.setItem(CLAVE, JSON.stringify(datos));
-    return true;
-  } catch {
-    mensaje("No se pudo guardar el historial.");
-    return false;
-  }
+function guardar(){
+  localStorage.setItem(CLAVE,JSON.stringify(datos));
 }
 
-function porcentaje(cantidad, total) {
-  return total
-    ? (cantidad * 100 / total).toFixed(1) + "%"
-    : "—";
+function formato(n){
+  return Number(n).toFixed(2) + "x";
 }
 
-function agregarVarios(valores) {
-  const validos = valores
-    .map(v => Number(String(v).replace(",", ".")))
-    .filter(n =>
-      Number.isFinite(n) && n >= 1 && n <= 5000
-    );
+function promedio(lista){
+  if(!lista.length) return 0;
+  return lista.reduce((a,b)=>a+b,0)/lista.length;
+}
 
-  if (!validos.length) {
-    mensaje("Escribe multiplicadores válidos desde 1 hasta 5000.");
+function mediana(lista){
+  if(!lista.length) return 0;
+  const orden = [...lista].sort((a,b)=>a-b);
+  const mitad = Math.floor(orden.length/2);
+  return orden.length%2
+    ? orden[mitad]
+    : (orden[mitad-1]+orden[mitad])/2;
+}
+
+function agregarResultado(){
+  const campo = document.getElementById("multiplicador");
+  const valor = Number(campo.value);
+
+  if(!campo.value || !Number.isFinite(valor) || valor < 1){
+    alert("Ingresa un multiplicador válido, igual o mayor a 1.");
     return;
   }
 
-  datos.push(...validos);
+  datos.push(valor);
   guardar();
+  campo.value = "";
   actualizar();
-
-  mensaje("Se guardaron " + validos.length + " resultados.");
 }
 
-function actualizarFrecuencia50() {
-  const ultimas50 = datos.slice(-50);
-  const total = ultimas50.length;
+function agregarVarios(){
+  const texto = document.getElementById("varios").value.trim();
 
-  const superiores = ultimas50.filter(n => n >= 2).length;
-  const inferiores = total - superiores;
+  if(!texto){
+    alert("Escribe los resultados que deseas importar.");
+    return;
+  }
 
-  const frecuencia = total
-    ? superiores * 100 / total
-    : 0;
+  const valores = texto.split(/[\s,;]+/)
+    .filter(x=>x.trim()!=="")
+    .map(x=>Number(x));
 
-  buscar("frecuencia50").textContent =
-    total ? frecuencia.toFixed(1) + "%" : "Sin datos";
+  if(!valores.length || valores.some(x=>!Number.isFinite(x)||x<1)){
+    alert("Hay valores incorrectos. Usa números iguales o mayores a 1.");
+    return;
+  }
 
-  buscar("cantidadSi").textContent = superiores;
-  buscar("cantidadNo").textContent = inferiores;
-  buscar("total50").textContent = total;
-  buscar("faltantes").textContent = 50 - total;
+  datos.push(...valores);
+  guardar();
+  document.getElementById("varios").value = "";
+  actualizar();
+  alert("Se importaron "+valores.length+" resultados.");
+}
 
-  buscar("barraSi").style.width =
-    total ? frecuencia + "%" : "0%";
+function analizarFrecuencia(){
+  const ultimos = datos.slice(-50);
+  const altos = ultimos.filter(x=>x>=2).length;
+  const bajos = ultimos.length-altos;
+  const porcentaje = ultimos.length ? altos/ultimos.length*100 : 0;
 
-  buscar("barraNo").style.width =
-    total ? (100 - frecuencia) + "%" : "0%";
+  document.getElementById("total50").textContent=ultimos.length;
+  document.getElementById("mayores2").textContent=altos;
+  document.getElementById("menores2").textContent=bajos;
+  document.getElementById("porcentaje2").textContent=
+    "El "+porcentaje.toFixed(1)+"% de los resultados fue de 2x o más.";
+  document.getElementById("barra2").style.width=porcentaje+"%";
+  document.getElementById("detalle50").textContent=
+    "Se analizan los últimos "+ultimos.length+" resultados. "+
+    (ultimos.length<50 ? "Faltan "+(50-ultimos.length)+" para completar 50." : "Análisis de 50 resultados completado.");
+}
 
-  if (total < 50) {
-    buscar("estado50").textContent =
-      "Faltan " + (50 - total) +
-      " rondas para completar el análisis de 50.";
+function analizarTendencia(){
+  const ultimos = datos.slice(-20);
+  const recientes = ultimos.slice(-5);
+  const anteriores = ultimos.slice(0,-5);
+
+  if(ultimos.length < 5){
+    document.getElementById("tendencia").textContent="--";
+    document.getElementById("prom5").textContent="--";
+    document.getElementById("prom15").textContent="--";
+    document.getElementById("frecuencia20").textContent="--";
+    document.getElementById("comportamiento").textContent=
+      "Necesitamos al menos 5 resultados para analizar la tendencia.";
+    document.getElementById("racha").textContent="Esperando más resultados.";
+    document.getElementById("consejo").textContent=
+      "Registra al menos 5 rondas para comenzar. Lo ideal es contar con 20.";
+    document.getElementById("confianza").textContent="";
+    return;
+  }
+
+  const p5 = promedio(recientes);
+  const pAnteriores = promedio(anteriores);
+  const frecuencia = ultimos.filter(x=>x>=2).length/ultimos.length*100;
+
+  document.getElementById("prom5").textContent=formato(p5);
+  document.getElementById("prom15").textContent=
+    anteriores.length ? formato(pAnteriores) : "--";
+  document.getElementById("frecuencia20").textContent=frecuencia.toFixed(1)+"%";
+
+  // Se compara el promedio reciente con el anterior.
+  let tendencia = "Irregular";
+  let explicacion = "No se observa un cambio claro entre los resultados recientes y los anteriores.";
+
+  if(anteriores.length){
+    const diferencia = p5-pAnteriores;
+    const margen = Math.max(0.25,pAnteriores*0.15);
+
+    if(diferencia > margen){
+      tendencia="Al alza";
+      explicacion="Los últimos 5 resultados tienen un promedio superior al grupo anterior.";
+    } else if(diferencia < -margen){
+      tendencia="A la baja";
+      explicacion="Los últimos 5 resultados tienen un promedio inferior al grupo anterior.";
+    }
+  }
+
+  document.getElementById("tendencia").textContent=tendencia;
+  document.getElementById("comportamiento").textContent=explicacion;
+
+  // Racha de resultados consecutivos: >=2x o <2x.
+  const ultimoTipo = datos[datos.length-1]>=2;
+  let racha=0;
+
+  for(let i=datos.length-1;i>=0;i--){
+    if((datos[i]>=2)===ultimoTipo) racha++;
+    else break;
+  }
+
+  document.getElementById("racha").textContent=
+    racha+" rondas consecutivas "+(ultimoTipo ? "de 2x o más." : "por debajo de 2x.");
+
+  // Consejo descriptivo con ponderación mayor para los últimos 5.
+  const porcentajeReciente =
+    recientes.filter(x=>x>=2).length/recientes.length*100;
+  const porcentajeAnterior = anteriores.length
+    ? anteriores.filter(x=>x>=2).length/anteriores.length*100
+    : porcentajeReciente;
+
+  const indicePonderado =
+    porcentajeReciente*0.65 + porcentajeAnterior*0.35;
+
+  let consejo="Los resultados son variables. No hay una tendencia suficientemente clara.";
+  let clase="";
+
+  if(indicePonderado < 30){
+    consejo="En esta muestra predominan los resultados inferiores a 2x. Consejo: mantén la prudencia y evita aumentar apuestas buscando recuperar pérdidas.";
+    clase="bad";
+  } else if(indicePonderado >= 60){
+    consejo="En esta muestra aparecen con frecuencia resultados de 2x o más. Esto describe el historial, pero no significa que la próxima ronda tenga más posibilidades de superar 2x. Evita confiarte.";
+    clase="good";
   } else {
-    buscar("estado50").textContent =
-      "Análisis completo: se utilizaron las últimas 50 rondas.";
+    consejo="El comportamiento está mezclado. No hay una señal histórica clara para tomar decisiones. Lo más prudente es observar y no aumentar el riesgo.";
+    clase="warn";
   }
+
+  if(tendencia==="A la baja"){
+    consejo += " Además, el promedio de los últimos 5 resultados está bajando.";
+  } else if(tendencia==="Al alza"){
+    consejo += " El promedio reciente subió, pero eso no garantiza que continúe.";
+  }
+
+  document.getElementById("consejo").textContent=consejo;
+  document.getElementById("consejo").className=clase;
+  document.getElementById("confianza").textContent=
+    "Muestra: "+ultimos.length+" rondas. Peso del análisis: 65% últimos 5 y 35% anteriores. Es una descripción histórica, no una predicción.";
 }
 
-function actualizar() {
-  const total = datos.length;
-  const ordenados = [...datos].sort((a, b) => a - b);
-  const suma = datos.reduce((a, b) => a + b, 0);
+function actualizar(){
+  const total=datos.length;
 
-  const mediana = total
-    ? (
-      ordenados[Math.floor((total - 1) / 2)] +
-      ordenados[Math.ceil((total - 1) / 2)]
-    ) / 2
-    : 0;
+  document.getElementById("total").textContent=total;
 
-  buscar("rondas").textContent = total;
-
-  buscar("promedio").textContent =
-    total ? (suma / total).toFixed(2) + "x" : "—";
-
-  buscar("mediana").textContent =
-    total ? mediana.toFixed(2) + "x" : "—";
-
-  buscar("mayor").textContent =
-    total ? Math.max(...datos).toFixed(2) + "x" : "—";
-
-  buscar("menor").textContent =
-    total ? Math.min(...datos).toFixed(2) + "x" : "—";
-
-  buscar("bajos").textContent =
-    total ? porcentaje(datos.filter(n => n < 1.5).length, total) : "—";
-
-  buscar("altos").textContent =
-    total ? porcentaje(datos.filter(n => n >= 2).length, total) : "—";
-
-  const frecuencias = buscar("frecuencias");
-  frecuencias.replaceChildren();
-
-  [1.5, 2, 3, 5, 10].forEach(objetivo => {
-    const cantidad = datos.filter(n => n >= objetivo).length;
-    const p = document.createElement("p");
-
-    p.textContent =
-      objetivo + "x o más: " +
-      porcentaje(cantidad, total) +
-      " (" + cantidad + "/" + total + ")";
-
-    frecuencias.appendChild(p);
-  });
-
-  const historial = buscar("historial");
-  historial.replaceChildren();
-
-  datos.slice().reverse().slice(0, 100).forEach(n => {
-    const elemento = document.createElement("span");
-    elemento.className = "pill";
-    elemento.textContent = n.toFixed(2) + "x";
-    historial.appendChild(elemento);
-  });
-
-  actualizarFrecuencia50();
-}
-
-function registrarEventos() {
-  buscar("agregar").addEventListener("click", function () {
-    const entrada = buscar("valor").value;
-
-    if (entrada.trim() === "") {
-      mensaje("Primero escribe un multiplicador.");
-      return;
-    }
-
-    agregarVarios([entrada]);
-    buscar("valor").value = "";
-    buscar("valor").focus();
-  });
-
-  buscar("valor").addEventListener("keydown", function (evento) {
-    if (evento.key === "Enter") {
-      buscar("agregar").click();
-    }
-  });
-
-  buscar("importar").addEventListener("click", function () {
-    const texto = buscar("lista").value.trim();
-
-    if (!texto) {
-      mensaje("Primero pega una lista de resultados.");
-      return;
-    }
-
-    agregarVarios(texto.split(/[\s,;]+/).filter(Boolean));
-    buscar("lista").value = "";
-  });
-
-  buscar("exportar").addEventListener("click", function () {
-    if (!datos.length) {
-      mensaje("No hay resultados para exportar.");
-      return;
-    }
-
-    const contenido = "multiplicador\n" +
-      datos.map(n => n.toFixed(2)).join("\n");
-
-    const archivo = new Blob(["\uFEFF" + contenido], {
-      type: "text/csv;charset=utf-8"
+  if(total){
+    document.getElementById("promedio").textContent=formato(promedio(datos));
+    document.getElementById("mediana").textContent=formato(mediana(datos));
+    document.getElementById("minimo").textContent=formato(Math.min(...datos));
+    document.getElementById("maximo").textContent=formato(Math.max(...datos));
+  } else {
+    ["promedio","mediana","minimo","maximo"].forEach(id=>{
+      document.getElementById(id).textContent="0x";
     });
-
-    const url = URL.createObjectURL(archivo);
-    const enlace = document.createElement("a");
-
-    enlace.href = url;
-    enlace.download = "spaceman-resultados.csv";
-    enlace.click();
-
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-    mensaje("Archivo CSV descargado.");
-  });
-
-  buscar("borrar").addEventListener("click", function () {
-    if (confirm("¿Deseas borrar todos los resultados?")) {
-      datos = [];
-      guardar();
-      actualizar();
-      mensaje("Historial eliminado.");
-    }
-  });
-}
-
-cargar();
-registrarEventos();
-actualizar();
-
-})();
-</script>
-
-</body>
-</html>
-
-<button id="exportar" type="button">Exportar CSV</button>
-<button id="borrar" class="borrar" type="button">Borrar historial</button>
-</section>
-
-</main>
-
-<script>
-(function () {
-"use strict";
-
-const buscar = id => document.getElementById(id);
-const CLAVE = "spacemanAnalyzerV2";
-
-let datos = [];
-
-function mostrarMensaje(texto) {
-  buscar("mensaje").textContent = texto;
-}
-
-function cargar() {
-  try {
-    const guardados = JSON.parse(
-      localStorage.getItem(CLAVE) || "[]"
-    );
-
-    if (Array.isArray(guardados)) {
-      datos = guardados.filter(n =>
-        typeof n === "number" &&
-        Number.isFinite(n) &&
-        n >= 1 && n <= 5000
-      );
-    }
-  } catch (error) {
-    datos = [];
-    mostrarMensaje("No se pudo leer el historial anterior.");
   }
-}
 
-function guardar() {
-  try {
-    localStorage.setItem(CLAVE, JSON.stringify(datos));
-    return true;
-  } catch (error) {
-    mostrarMensaje("No se pudo guardar. Revisa el almacenamiento del navegador.");
-    return false;
+  const historial=document.getElementById("historial");
+
+  if(!total){
+    historial.textContent="Todavía no hay resultados.";
+  } else {
+    historial.innerHTML=datos.slice().reverse().map((x,i)=>
+      '<span class="resultado">'+formato(x)+'</span>'
+    ).join("");
   }
+
+  analizarFrecuencia();
+  analizarTendencia();
 }
 
-function porcentaje(cantidad, total) {
-  return total
-    ? (cantidad * 100 / total).toFixed(1) + "%"
-    : "—";
+function borrarHistorial(){
+  if(!confirm("¿Seguro que deseas borrar todo el historial? Esta acción no se puede deshacer.")) return;
+  datos=[];
+  guardar();
+  actualizar();
 }
 
-function agregarVarios(valores) {
-  const validos = valores
-    .map(v => Number(String(v).replace(",", ".")))
-    .filter(n =>
-      Number.isFinite(n) &&
-      n >= 1 &&
-      n <= 5000
-    );
-
-  if (!validos.length) {
-    mostrarMensaje("Escribe multiplicadores válidos desde 1 hasta 5000.");
+function exportarCSV(){
+  if(!datos.length){
+    alert("No hay resultados para descargar.");
     return;
   }
 
-  datos.push(...validos);
-  guardar();
-  actualizar();
+  const contenido="Numero,Multiplicador\n"+
+    datos.map((x,i)=>(i+1)+","+x).join("\n");
 
-  mostrarMensaje("Se guardaron " + validos.length + " resultados.");
+  const archivo=new Blob([contenido],{type:"text/csv;charset=utf-8;"});
+  const url=URL.createObjectURL(archivo);
+  const enlace=document.createElement("a");
+  enlace.href=url;
+  enlace.download="historial_spaceman.csv";
+  enlace.click();
+  URL.revokeObjectURL(url);
 }
 
-function actualizar() {
-  const total = datos.length;
-  const ordenados = [...datos].sort((a, b) => a - b);
+window.agregarResultado=agregarResultado;
+window.agregarVarios=agregarVarios;
+window.borrarHistorial=borrarHistorial;
+window.exportarCSV=exportarCSV;
 
-  const suma = datos.reduce((a, b) => a + b, 0);
-
-  const mediana = total
-    ? (
-      ordenados[Math.floor((total - 1) / 2)] +
-      ordenados[Math.ceil((total - 1) / 2)]
-    ) / 2
-    : 0;
-
-  buscar("rondas").textContent = total;
-
-  buscar("promedio").textContent =
-    total ? (suma / total).toFixed(2) + "x" : "—";
-
-  buscar("mediana").textContent =
-    total ? mediana.toFixed(2) + "x" : "—";
-
-  buscar("mayor").textContent =
-    total ? Math.max(...datos).toFixed(2) + "x" : "—";
-
-  buscar("menor").textContent =
-    total ? Math.min(...datos).toFixed(2) + "x" : "—";
-
-  buscar("bajos").textContent =
-    total ? porcentaje(datos.filter(n => n < 1.5).length, total) : "—";
-
-  buscar("altos").textContent =
-    total ? porcentaje(datos.filter(n => n >= 2).length, total) : "—";
-
-  const frecuencias = buscar("frecuencias");
-  frecuencias.replaceChildren();
-
-  [1.5, 2, 3, 5, 10].forEach(objetivo => {
-    const cantidad = datos.filter(n => n >= objetivo).length;
-    const p = document.createElement("p");
-
-    p.textContent =
-      objetivo + "x o más: " +
-      porcentaje(cantidad, total) +
-      " (" + cantidad + "/" + total + ")";
-
-    frecuencias.appendChild(p);
-  });
-
-  const historial = buscar("historial");
-  historial.replaceChildren();
-
-  datos.slice().reverse().slice(0, 100).forEach(n => {
-    const elemento = document.createElement("span");
-    elemento.className = "pill";
-    elemento.textContent = n.toFixed(2) + "x";
-    historial.appendChild(elemento);
-  });
-}
-
-function registrarEventos() {
-  buscar("agregar").addEventListener("click", function () {
-    const entrada = buscar("valor").value;
-
-    if (entrada.trim() === "") {
-      mostrarMensaje("Primero escribe un multiplicador.");
-      return;
-    }
-
-    agregarVarios([entrada]);
-    buscar("valor").value = "";
-    buscar("valor").focus();
-  });
-
-  buscar("valor").addEventListener("keydown", function (evento) {
-    if (evento.key === "Enter") {
-      buscar("agregar").click();
-    }
-  });
-
-  buscar("importar").addEventListener("click", function () {
-    const texto = buscar("lista").value.trim();
-
-    if (!texto) {
-      mostrarMensaje("Primero pega una lista de resultados.");
-      return;
-    }
-
-    agregarVarios(texto.split(/[\s,;]+/).filter(Boolean));
-    buscar("lista").value = "";
-  });
-
-  buscar("exportar").addEventListener("click", function () {
-    if (!datos.length) {
-      mostrarMensaje("No hay resultados para exportar.");
-      return;
-    }
-
-    const contenido = "multiplicador\n" +
-      datos.map(n => n.toFixed(2)).join("\n");
-
-    const archivo = new Blob(["\uFEFF" + contenido], {
-      type: "text/csv;charset=utf-8"
-    });
-
-    const url = URL.createObjectURL(archivo);
-    const enlace = document.createElement("a");
-
-    enlace.href = url;
-    enlace.download = "spaceman-resultados.csv";
-    enlace.click();
-
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-    mostrarMensaje("Archivo CSV descargado.");
-  });
-
-  buscar("borrar").addEventListener("click", function () {
-    if (confirm("¿Deseas borrar todos los resultados?")) {
-      datos = [];
-      guardar();
-      actualizar();
-      mostrarMensaje("Historial eliminado.");
-    }
-  });
-}
-
-cargar();
-registrarEventos();
 actualizar();
 
 })();
 </script>
-
 </body>
 </html>
