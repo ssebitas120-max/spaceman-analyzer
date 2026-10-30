@@ -1,11 +1,14 @@
-```html
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Spaceman Analyzer</title>
+
 <style>
+* { box-sizing: border-box; }
+
 body {
   margin: 0;
   padding: 20px;
@@ -13,8 +16,14 @@ body {
   color: white;
   font-family: Arial, sans-serif;
 }
-main { max-width: 700px; margin: auto; }
+
+main {
+  max-width: 750px;
+  margin: auto;
+}
+
 h1 { color: #d8a6ff; }
+
 .card {
   background: #211239;
   border: 1px solid #493164;
@@ -22,19 +31,21 @@ h1 { color: #d8a6ff; }
   padding: 16px;
   margin: 15px 0;
 }
+
 input, textarea, button {
-  box-sizing: border-box;
   width: 100%;
-  padding: 12px;
-  margin: 6px 0;
+  padding: 13px;
+  margin: 7px 0;
   border-radius: 8px;
   font-size: 16px;
 }
+
 input, textarea {
   background: #100820;
   color: white;
   border: 1px solid #62467e;
 }
+
 button {
   background: #853ce8;
   color: white;
@@ -42,211 +53,307 @@ button {
   cursor: pointer;
   font-weight: bold;
 }
+
+button:hover { background: #a45aff; }
+
+.borrar { background: #a83250; }
 .grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
 }
+
 .metric {
   background: #160c27;
-  padding: 12px;
+  padding: 13px;
   border-radius: 8px;
 }
+
 .metric strong {
   display: block;
   font-size: 23px;
   margin-top: 8px;
+  color: #d8a6ff;
 }
-.results {
+
+.resultados {
   display: flex;
   flex-wrap: wrap;
   gap: 7px;
 }
+
 .pill {
   background: #3b2162;
   padding: 8px 12px;
   border-radius: 20px;
 }
+
 small { color: #d0b9e7; }
+
+#mensaje {
+  display: block;
+  margin-top: 10px;
+}
+
+@media(max-width: 450px) {
+  body { padding: 10px; }
+  .grid { grid-template-columns: 1fr 1fr; }
+}
 </style>
 </head>
+
 <body>
 <main>
+
 <h1>🚀 Spaceman Analyzer</h1>
 <p>Analizador estadístico de resultados históricos.</p>
 
 <section class="card">
 <h3>1. Registrar multiplicadores</h3>
-<input id="valor" type="number" min="1" step="any"
-placeholder="Ejemplo: 2.35">
-<button id="agregar">Guardar resultado</button>
+
+<input id="valor" type="number" min="1" max="5000"
+step="any" placeholder="Ejemplo: 2.35">
+
+<button id="agregar" type="button">Guardar resultado</button>
 
 <textarea id="lista" rows="4"
-placeholder="Pega varios resultados: 1.20, 2.35, 3.50"></textarea>
-<button id="importar">Importar lista</button>
-<small id="mensaje">Los datos se guardan en este navegador.</small>
+placeholder="Pega resultados separados por espacios, comas o saltos de línea"></textarea>
+
+<button id="importar" type="button">Importar lista</button>
+
+<small id="mensaje">Listo para registrar resultados.</small>
 </section>
 
 <section class="card">
 <h3>2. Estadísticas</h3>
+
 <div class="grid">
 <div class="metric">Rondas<strong id="rondas">0</strong></div>
 <div class="metric">Promedio<strong id="promedio">—</strong></div>
 <div class="metric">Mediana<strong id="mediana">—</strong></div>
 <div class="metric">Mayor resultado<strong id="mayor">—</strong></div>
+<div class="metric">Menor resultado<strong id="menor">—</strong></div>
 <div class="metric">Menores de 1.50x<strong id="bajos">—</strong></div>
 <div class="metric">Resultados de 2x o más<strong id="altos">—</strong></div>
 </div>
 
 <h3>Frecuencia histórica</h3>
 <div id="frecuencias"></div>
-<p><small>Las estadísticas históricas no predicen con certeza la siguiente ronda.</small></p>
+
+<p><small>Estos datos describen resultados anteriores. No predicen la siguiente ronda.</small></p>
 </section>
 
 <section class="card">
 <h3>3. Historial</h3>
-<div id="historial" class="results"></div>
-<button id="exportar">Exportar CSV</button>
-<button id="borrar">Borrar historial</button>
+<p>Últimos resultados registrados:</p>
+<div id="historial" class="resultados"></div>
+
+<button id="exportar" type="button">Exportar CSV</button>
+<button id="borrar" class="borrar" type="button">Borrar historial</button>
 </section>
+
 </main>
 
 <script>
-const $ = id => document.getElementById(id);
-const CLAVE = "spacemanAnalyzerV1";
+(function () {
+"use strict";
+
+const buscar = id => document.getElementById(id);
+const CLAVE = "spacemanAnalyzerV2";
+
 let datos = [];
 
-try {
-  const guardados = JSON.parse(localStorage.getItem(CLAVE) || "[]");
-  if (Array.isArray(guardados)) {
-    datos = guardados.filter(n =>
-      Number.isFinite(n) && n >= 1 && n <= 5000
+function mostrarMensaje(texto) {
+  buscar("mensaje").textContent = texto;
+}
+
+function cargar() {
+  try {
+    const guardados = JSON.parse(
+      localStorage.getItem(CLAVE) || "[]"
     );
+
+    if (Array.isArray(guardados)) {
+      datos = guardados.filter(n =>
+        typeof n === "number" &&
+        Number.isFinite(n) &&
+        n >= 1 && n <= 5000
+      );
+    }
+  } catch (error) {
+    datos = [];
+    mostrarMensaje("No se pudo leer el historial anterior.");
   }
-} catch {}
+}
 
 function guardar() {
   try {
     localStorage.setItem(CLAVE, JSON.stringify(datos));
-    $("mensaje").textContent = "Historial guardado correctamente.";
-  } catch {
-    $("mensaje").textContent = "No se pudo guardar el historial.";
+    return true;
+  } catch (error) {
+    mostrarMensaje("No se pudo guardar. Revisa el almacenamiento del navegador.");
+    return false;
   }
-  actualizar();
+}
+
+function porcentaje(cantidad, total) {
+  return total
+    ? (cantidad * 100 / total).toFixed(1) + "%"
+    : "—";
 }
 
 function agregarVarios(valores) {
-  const validos = valores.map(Number).filter(n =>
-    Number.isFinite(n) && n >= 1 && n <= 5000
-  );
+  const validos = valores
+    .map(v => Number(String(v).replace(",", ".")))
+    .filter(n =>
+      Number.isFinite(n) &&
+      n >= 1 &&
+      n <= 5000
+    );
 
   if (!validos.length) {
-    $("mensaje").textContent =
-      "Introduce multiplicadores válidos desde 1.";
+    mostrarMensaje("Escribe multiplicadores válidos desde 1 hasta 5000.");
     return;
   }
 
   datos.push(...validos);
   guardar();
-  $("mensaje").textContent =
-    "Se guardaron " + validos.length + " resultados.";
-}
+  actualizar();
 
-$("agregar").onclick = () => {
-  const valor = Number($("valor").value);
-
-  if (!Number.isFinite(valor) || valor < 1 || valor > 5000) {
-    $("mensaje").textContent = "Escribe un multiplicador válido.";
-    return;
-  }
-
-  agregarVarios([valor]);
-  $("valor").value = "";
-};
-
-$("importar").onclick = () => {
-  const texto = $("lista").value.trim();
-
-  if (!texto) {
-    $("mensaje").textContent = "Primero pega una lista de resultados.";
-    return;
-  }
-
-  agregarVarios(texto.split(/[\s,;]+/).filter(Boolean));
-  $("lista").value = "";
-};
-
-function porcentaje(cantidad, total) {
-  return total ? (cantidad * 100 / total).toFixed(1) + "%" : "—";
+  mostrarMensaje("Se guardaron " + validos.length + " resultados.");
 }
 
 function actualizar() {
   const total = datos.length;
   const ordenados = [...datos].sort((a, b) => a - b);
+
   const suma = datos.reduce((a, b) => a + b, 0);
 
   const mediana = total
-    ? (ordenados[Math.floor((total - 1) / 2)] +
-       ordenados[Math.ceil((total - 1) / 2)]) / 2
+    ? (
+      ordenados[Math.floor((total - 1) / 2)] +
+      ordenados[Math.ceil((total - 1) / 2)]
+    ) / 2
     : 0;
 
-  $("rondas").textContent = total;
-  $("promedio").textContent =
+  buscar("rondas").textContent = total;
+
+  buscar("promedio").textContent =
     total ? (suma / total).toFixed(2) + "x" : "—";
-  $("mediana").textContent =
+
+  buscar("mediana").textContent =
     total ? mediana.toFixed(2) + "x" : "—";
-  $("mayor").textContent =
+
+  buscar("mayor").textContent =
     total ? Math.max(...datos).toFixed(2) + "x" : "—";
-  $("bajos").textContent =
+
+  buscar("menor").textContent =
+    total ? Math.min(...datos).toFixed(2) + "x" : "—";
+
+  buscar("bajos").textContent =
     total ? porcentaje(datos.filter(n => n < 1.5).length, total) : "—";
-  $("altos").textContent =
+
+  buscar("altos").textContent =
     total ? porcentaje(datos.filter(n => n >= 2).length, total) : "—";
 
-  $("frecuencias").replaceChildren();
+  const frecuencias = buscar("frecuencias");
+  frecuencias.replaceChildren();
 
   [1.5, 2, 3, 5, 10].forEach(objetivo => {
     const cantidad = datos.filter(n => n >= objetivo).length;
     const p = document.createElement("p");
-    p.textContent = objetivo + "x o más: " +
-      porcentaje(cantidad, total) + " (" + cantidad + "/" + total + ")";
-    $("frecuencias").appendChild(p);
+
+    p.textContent =
+      objetivo + "x o más: " +
+      porcentaje(cantidad, total) +
+      " (" + cantidad + "/" + total + ")";
+
+    frecuencias.appendChild(p);
   });
 
-  $("historial").replaceChildren();
+  const historial = buscar("historial");
+  historial.replaceChildren();
 
   datos.slice().reverse().slice(0, 100).forEach(n => {
-    const span = document.createElement("span");
-    span.className = "pill";
-    span.textContent = n.toFixed(2) + "x";
-    $("historial").appendChild(span);
+    const elemento = document.createElement("span");
+    elemento.className = "pill";
+    elemento.textContent = n.toFixed(2) + "x";
+    historial.appendChild(elemento);
   });
 }
 
-$("exportar").onclick = () => {
-  const contenido = "multiplicador\n" +
-    datos.map(n => n.toFixed(2)).join("\n");
+function registrarEventos() {
+  buscar("agregar").addEventListener("click", function () {
+    const entrada = buscar("valor").value;
 
-  const archivo = new Blob(["\uFEFF" + contenido], {
-    type: "text/csv;charset=utf-8"
+    if (entrada.trim() === "") {
+      mostrarMensaje("Primero escribe un multiplicador.");
+      return;
+    }
+
+    agregarVarios([entrada]);
+    buscar("valor").value = "";
+    buscar("valor").focus();
   });
 
-  const url = URL.createObjectURL(archivo);
-  const enlace = document.createElement("a");
-  enlace.href = url;
-  enlace.download = "spaceman-resultados.csv";
-  enlace.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-};
+  buscar("valor").addEventListener("keydown", function (evento) {
+    if (evento.key === "Enter") {
+      buscar("agregar").click();
+    }
+  });
 
-$("borrar").onclick = () => {
-  if (confirm("¿Deseas borrar todos los resultados?")) {
-    datos = [];
-    guardar();
-  }
-};
+  buscar("importar").addEventListener("click", function () {
+    const texto = buscar("lista").value.trim();
 
+    if (!texto) {
+      mostrarMensaje("Primero pega una lista de resultados.");
+      return;
+    }
+
+    agregarVarios(texto.split(/[\s,;]+/).filter(Boolean));
+    buscar("lista").value = "";
+  });
+
+  buscar("exportar").addEventListener("click", function () {
+    if (!datos.length) {
+      mostrarMensaje("No hay resultados para exportar.");
+      return;
+    }
+
+    const contenido = "multiplicador\n" +
+      datos.map(n => n.toFixed(2)).join("\n");
+
+    const archivo = new Blob(["\uFEFF" + contenido], {
+      type: "text/csv;charset=utf-8"
+    });
+
+    const url = URL.createObjectURL(archivo);
+    const enlace = document.createElement("a");
+
+    enlace.href = url;
+    enlace.download = "spaceman-resultados.csv";
+    enlace.click();
+
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    mostrarMensaje("Archivo CSV descargado.");
+  });
+
+  buscar("borrar").addEventListener("click", function () {
+    if (confirm("¿Deseas borrar todos los resultados?")) {
+      datos = [];
+      guardar();
+      actualizar();
+      mostrarMensaje("Historial eliminado.");
+    }
+  });
+}
+
+cargar();
+registrarEventos();
 actualizar();
+
+})();
 </script>
+
 </body>
 </html>
-```
